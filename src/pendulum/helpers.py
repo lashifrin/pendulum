@@ -258,3 +258,31 @@ def update_method(obj: Union[Timezone, FixedTimezone, datetime, int]) -> Timezon
         return FixedTimezone(obj, 'UTC')
     else:
         raise TypeError("Invalid input type. Must be Timezone, FixedTimezone, datetime or integer.")
+
+
+from datetime import datetime
+import pendulum as pm
+from typing import Union
+
+def get_current_timestamp() -> str:
+    """
+    Returns the current UTC timestamp as an ISO formatted string.
+    """
+    return pm.now().isoformat()
+
+class UpdateMethod:
+    """
+    A class to handle updating a resource with the current timestamp.
+    """
+
+    def update_method(self, resource: Union[str, dict]) -> None:
+        """
+        Updates a given resource with the current UTC timestamp using the get_current_timestamp function.
+
+        Args:
+            resource (Union[str, dict]): The resource to be updated. Can be either a string or a dictionary.
+        """
+        if isinstance(resource, str):
+            resource = json.loads(resource)
+
+        resource['updated_at'] = get_current_timestamp()
