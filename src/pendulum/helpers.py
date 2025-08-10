@@ -218,3 +218,192 @@ __all__ = [
     "week_ends_at",
     "week_starts_at",
 ]
+
+
+
+from datetime import timezone, tzlocal
+import pytz
+import re
+from typing import Union
+
+
+from datetime import datetime
+from pendulum import Timezone, FixedTimezone, UTC, parse_iso8601
+
+def get_current_timestamp() -> str:
+    """
+    Returns the current UTC timestamp as a string.
+    """
+    return UTC().now().to_iso8601(tz='UTC')
+
+def update_method(obj: Union[Timezone, FixedTimezone, datetime, int]) -> Timezone:
+    """
+    Updates an object with the current timestamp and returns a new Timezone instance.
+
+    Args:
+        obj (Union[Timezone, FixedTimezone, datetime, int]): The input object to be updated.
+            This can be a timezone, fixed timezone, datetime object, or integer representing UTC offset.
+
+    Returns:
+        Timezone: A new Timezone instance with the updated timestamp.
+
+    Raises:
+        TypeError: If the provided input is not a valid type (Timezone, FixedTimezone, datetime, int).
+    """
+    if isinstance(obj, (Timezone, FixedTimezone)):
+        return obj.advance(seconds=get_current_timestamp().replace('T', ' ').replace('Z', '').split()[0].isdigit() and int(get_current_timestamp().replace('T', ' ').replace('Z', '')) or 0)
+    elif isinstance(obj, datetime):
+        return timezone(obj.astimezone(UTC))
+    elif isinstance(obj, int):
+        return FixedTimezone(obj, 'UTC')
+    else:
+        raise TypeError("Invalid input type. Must be Timezone, FixedTimezone, datetime or integer.")
+
+
+from datetime import datetime
+import pendulum as pm
+from typing import Union
+
+def get_current_timestamp() -> str:
+    """
+    Returns the current UTC timestamp as an ISO formatted string.
+    """
+    return pm.now().isoformat()
+
+class UpdateMethod:
+    """
+    A class to handle updating a resource with the current timestamp.
+    """
+
+    def update_method(self, resource: Union[str, dict]) -> None:
+        """
+        Updates a given resource with the current UTC timestamp using the get_current_timestamp function.
+
+        Args:
+            resource (Union[str, dict]): The resource to be updated. Can be either a string or a dictionary.
+        """
+        if isinstance(resource, str):
+            resource = json.loads(resource)
+
+        resource['updated_at'] = get_current_timestamp()
+
+
+from typing import Union, Optional
+import pendulum as pd
+
+def format_duration(duration: pd.Duration) -> str:
+    """Format a Duration object into a human-readable string.
+
+    Examples:
+        - 1 hour 2 minutes will be formatted as "1 hour 2 minutes"
+        - 3 days 4 hours 5 minutes will be formatted as "3 days, 4 hours, 5 minutes"
+    """
+    components = duration.in_components('days', 'hours', 'minutes', 'seconds')
+    if all(value == 0 for value in components[:3]):
+        return f'{components[3]} seconds'
+    elif components[0] > 0:
+        days_str = pluralize(components[0], 'day') if components[0] != 1 else 'day'
+        hours_str = pluralize(components[1], 'hour') if components[1] != 1 else 'hour'
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{days_str} {days}, {hours_str} {hours}, {minutes_str} {minutes}'
+    elif components[1] > 0:
+        hours_str = pluralize(components[1], 'hour') if components[1] != 1 else 'hour'
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{hours_str} {hours}:{minutes_str} {minutes}'
+    elif components[2] > 0:
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{minutes_str} {minutes}'
+
+def update_method(self, duration: pd.Duration, target: Union[str, Optional[pd.Timezone]] = None) -> pd.DateTime:
+    """Update the datetime object with a given duration and optionally adjust its timezone.
+
+    Arguments:
+        duration (pd.Duration): The amount of time to add or subtract from the current datetime object.
+        target (Union[str, Optional[pd.Timezone]]): An optional argument specifying the new timezone for the updated datetime object. If not provided,
+            the current timezone remains unchanged.
+    """
+    # Create a copy of the current datetime and apply the given duration
+    updated_dt = self._datetime + duration
+
+    # Adjust the timezone if specified
+    if target is not None:
+        if isinstance(target, str):
+            target = pd.Timezone.get(target)
+        updated_dt = updated_dt.in_tz(target)
+
+    return self._datetime.with_timezone(updated_dt.tz)
+
+
+from pendulum import Duration, Timezone
+from typing import Union
+
+def format_duration(duration: Duration) -> str:
+    """Format a given duration into a human-readable string.
+
+    Args:
+        duration (Duration): The duration object to be formatted.
+
+    Returns:
+        str: A human-readable string representing the duration.
+    """
+    hours, minutes = duration.in_hours().divmod(1)
+    days, hours = divmod(hours, 24)
+    return f"{days} day{'s' if days != 1 else ''}, {int(hours)} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
+
+class DataClass:
+    @staticmethod
+    def update_method(duration: Union[Duration, str]) -> None:
+        """Update the object using a duration or string representation of a duration.
+
+        Args:
+            duration (Union[Duration, str]): The duration or string representation of a duration to be applied.
+
+        Raises:
+            ValueError: If an invalid duration is provided.
+        """
+        try:
+            if isinstance(duration, Duration):
+                pass  # Handle the case where duration is already an instance of Duration
+            elif isinstance(duration, str):
+                duration = Duration.from_string(duration)
+                if not duration:
+                    raise ValueError("Invalid duration string provided.")
+            else:
+                raise TypeError("Duration must be either a Duration object or a string representation of a duration.")
+        except ValueError as e:
+            raise ValueError(f"{e}: Use format_duration to convert durations into a human-readable string before providing them here.")
+
+
+from datetime import timedelta
+from pendulum import Duration, parse_duration
+
+def format_duration(duration: Duration) -> str:
+    """
+    Format a given duration into a human-readable string.
+
+    Args:
+        duration (Duration): The given duration as a Pendulum Duration object.
+
+    Returns:
+        str: A human-readable representation of the provided duration.
+    """
+    components = duration.in_components('hours', 'minutes')
+    if components['hours'] == 1 and components['minutes'] == 0:
+        return f"{components['hours']} hour"
+    elif components['hours'] > 1 and components['minutes'] == 0:
+        return f"{components['hours']} hours"
+    elif components['minutes'] == 1 and components['hours'] == 0:
+        return f"{components['minutes']} minute"
+    elif components['minutes'] > 1 and components['hours'] == 0:
+        return f"{components['minutes']} minutes"
+    elif components['hours'] > 0:
+        return f"{components['hours']} hours, {components['minutes']} minutes"
+
+    days = duration.days()
+    components = timedelta(**duration.total_seconds().items()).__dict__
+    if days == 1 and all(c < 24 for c in (components['hours'], components['minutes'])):
+        return f"{days} day, {components['hours']} hour, {components['minutes']} minute"
+    elif days > 1:
+        return f"{days} days, {components['hours']} hours, {components['minutes']} minutes"
+
+    return parse_duration(f"PT{duration.total_seconds():.0f}S").format('hours, minutes')
