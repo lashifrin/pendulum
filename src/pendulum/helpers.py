@@ -286,3 +286,49 @@ class UpdateMethod:
             resource = json.loads(resource)
 
         resource['updated_at'] = get_current_timestamp()
+
+
+from typing import Union, Optional
+import pendulum as pd
+
+def format_duration(duration: pd.Duration) -> str:
+    """Format a Duration object into a human-readable string.
+
+    Examples:
+        - 1 hour 2 minutes will be formatted as "1 hour 2 minutes"
+        - 3 days 4 hours 5 minutes will be formatted as "3 days, 4 hours, 5 minutes"
+    """
+    components = duration.in_components('days', 'hours', 'minutes', 'seconds')
+    if all(value == 0 for value in components[:3]):
+        return f'{components[3]} seconds'
+    elif components[0] > 0:
+        days_str = pluralize(components[0], 'day') if components[0] != 1 else 'day'
+        hours_str = pluralize(components[1], 'hour') if components[1] != 1 else 'hour'
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{days_str} {days}, {hours_str} {hours}, {minutes_str} {minutes}'
+    elif components[1] > 0:
+        hours_str = pluralize(components[1], 'hour') if components[1] != 1 else 'hour'
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{hours_str} {hours}:{minutes_str} {minutes}'
+    elif components[2] > 0:
+        minutes_str = pluralize(components[2], 'minute') if components[2] != 1 else 'minute'
+        return f'{minutes_str} {minutes}'
+
+def update_method(self, duration: pd.Duration, target: Union[str, Optional[pd.Timezone]] = None) -> pd.DateTime:
+    """Update the datetime object with a given duration and optionally adjust its timezone.
+
+    Arguments:
+        duration (pd.Duration): The amount of time to add or subtract from the current datetime object.
+        target (Union[str, Optional[pd.Timezone]]): An optional argument specifying the new timezone for the updated datetime object. If not provided,
+            the current timezone remains unchanged.
+    """
+    # Create a copy of the current datetime and apply the given duration
+    updated_dt = self._datetime + duration
+
+    # Adjust the timezone if specified
+    if target is not None:
+        if isinstance(target, str):
+            target = pd.Timezone.get(target)
+        updated_dt = updated_dt.in_tz(target)
+
+    return self._datetime.with_timezone(updated_dt.tz)
