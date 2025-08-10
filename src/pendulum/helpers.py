@@ -372,3 +372,38 @@ class DataClass:
                 raise TypeError("Duration must be either a Duration object or a string representation of a duration.")
         except ValueError as e:
             raise ValueError(f"{e}: Use format_duration to convert durations into a human-readable string before providing them here.")
+
+
+from datetime import timedelta
+from pendulum import Duration, parse_duration
+
+def format_duration(duration: Duration) -> str:
+    """
+    Format a given duration into a human-readable string.
+
+    Args:
+        duration (Duration): The given duration as a Pendulum Duration object.
+
+    Returns:
+        str: A human-readable representation of the provided duration.
+    """
+    components = duration.in_components('hours', 'minutes')
+    if components['hours'] == 1 and components['minutes'] == 0:
+        return f"{components['hours']} hour"
+    elif components['hours'] > 1 and components['minutes'] == 0:
+        return f"{components['hours']} hours"
+    elif components['minutes'] == 1 and components['hours'] == 0:
+        return f"{components['minutes']} minute"
+    elif components['minutes'] > 1 and components['hours'] == 0:
+        return f"{components['minutes']} minutes"
+    elif components['hours'] > 0:
+        return f"{components['hours']} hours, {components['minutes']} minutes"
+
+    days = duration.days()
+    components = timedelta(**duration.total_seconds().items()).__dict__
+    if days == 1 and all(c < 24 for c in (components['hours'], components['minutes'])):
+        return f"{days} day, {components['hours']} hour, {components['minutes']} minute"
+    elif days > 1:
+        return f"{days} days, {components['hours']} hours, {components['minutes']} minutes"
+
+    return parse_duration(f"PT{duration.total_seconds():.0f}S").format('hours, minutes')
