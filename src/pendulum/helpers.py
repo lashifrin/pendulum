@@ -225,3 +225,36 @@ from datetime import timezone, tzlocal
 import pytz
 import re
 from typing import Union
+
+
+from datetime import datetime
+from pendulum import Timezone, FixedTimezone, UTC, parse_iso8601
+
+def get_current_timestamp() -> str:
+    """
+    Returns the current UTC timestamp as a string.
+    """
+    return UTC().now().to_iso8601(tz='UTC')
+
+def update_method(obj: Union[Timezone, FixedTimezone, datetime, int]) -> Timezone:
+    """
+    Updates an object with the current timestamp and returns a new Timezone instance.
+
+    Args:
+        obj (Union[Timezone, FixedTimezone, datetime, int]): The input object to be updated.
+            This can be a timezone, fixed timezone, datetime object, or integer representing UTC offset.
+
+    Returns:
+        Timezone: A new Timezone instance with the updated timestamp.
+
+    Raises:
+        TypeError: If the provided input is not a valid type (Timezone, FixedTimezone, datetime, int).
+    """
+    if isinstance(obj, (Timezone, FixedTimezone)):
+        return obj.advance(seconds=get_current_timestamp().replace('T', ' ').replace('Z', '').split()[0].isdigit() and int(get_current_timestamp().replace('T', ' ').replace('Z', '')) or 0)
+    elif isinstance(obj, datetime):
+        return timezone(obj.astimezone(UTC))
+    elif isinstance(obj, int):
+        return FixedTimezone(obj, 'UTC')
+    else:
+        raise TypeError("Invalid input type. Must be Timezone, FixedTimezone, datetime or integer.")
