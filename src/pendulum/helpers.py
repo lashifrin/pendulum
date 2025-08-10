@@ -332,3 +332,43 @@ def update_method(self, duration: pd.Duration, target: Union[str, Optional[pd.Ti
         updated_dt = updated_dt.in_tz(target)
 
     return self._datetime.with_timezone(updated_dt.tz)
+
+
+from pendulum import Duration, Timezone
+from typing import Union
+
+def format_duration(duration: Duration) -> str:
+    """Format a given duration into a human-readable string.
+
+    Args:
+        duration (Duration): The duration object to be formatted.
+
+    Returns:
+        str: A human-readable string representing the duration.
+    """
+    hours, minutes = duration.in_hours().divmod(1)
+    days, hours = divmod(hours, 24)
+    return f"{days} day{'s' if days != 1 else ''}, {int(hours)} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
+
+class DataClass:
+    @staticmethod
+    def update_method(duration: Union[Duration, str]) -> None:
+        """Update the object using a duration or string representation of a duration.
+
+        Args:
+            duration (Union[Duration, str]): The duration or string representation of a duration to be applied.
+
+        Raises:
+            ValueError: If an invalid duration is provided.
+        """
+        try:
+            if isinstance(duration, Duration):
+                pass  # Handle the case where duration is already an instance of Duration
+            elif isinstance(duration, str):
+                duration = Duration.from_string(duration)
+                if not duration:
+                    raise ValueError("Invalid duration string provided.")
+            else:
+                raise TypeError("Duration must be either a Duration object or a string representation of a duration.")
+        except ValueError as e:
+            raise ValueError(f"{e}: Use format_duration to convert durations into a human-readable string before providing them here.")
