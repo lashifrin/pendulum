@@ -412,3 +412,39 @@ __all__ = [
     "week_starts_at",
     "yesterday",
 ]
+
+
+
+from typing import Optional, Union
+import pendulum as pm
+
+def now_utc() -> pm.DateTime:
+    """Returns the current UTC time as a Pendulum DateTime object."""
+    return pm.now('UTC')
+
+class MyClass:
+    def update_method(self, obj: Union[str, int, None]) -> str:
+        """Updates some internal state based on the provided input.
+
+        Args:
+            obj (Union[str, int, None]): The object to use for updating the internal state.
+                Can be a string representing a timezone name or UTC offset,
+                an integer representing a UTC offset in seconds, or None.
+        """
+        if obj is not None:
+            timezone_obj = self._safe_timezone(obj)
+            # Perform some update logic using the timezone object...
+        else:
+            timezone_obj = self._safe_timezone()
+            # Handle the case where no input was provided, or fallback to a default...
+
+    def _safe_timezone(self, obj: Union[str, int, float, None, pm.Timezone, pm.FixedTimezone]) -> Union[pm.Timezone, pm.FixedTimezone]:
+        """Creates and returns a timezone object based on the provided input.
+
+        Args:
+            obj (Union[str, int, float, None, pendulum.Timezone, pendulum.FixedTimezone]): The input to use for creating the timezone object.
+                Can be a string representing a timezone name or UTC offset,
+                an integer or float representing a UTC offset in seconds,
+                a Timezone or FixedTimezone object from Pendulum, or None.
+        """
+        # Implement the logic for creating a safe and consistent timezone object based on the input...
